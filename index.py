@@ -1,20 +1,8 @@
-# -*- coding: utf-8 -*-
-
-#  Licensed under the Apache License, Version 2.0 (the "License"); you may
-#  not use this file except in compliance with the License. You may obtain
-#  a copy of the License at
-#
-#       https://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#  License for the specific language governing permissions and limitations
-#  under the License.
-
 import os
 import sys
 from argparse import ArgumentParser
+from repository.user_repository import UserRepository
+from model.user import User
 
 from flask import Flask, request, abort
 from linebot import (
@@ -42,7 +30,6 @@ if channel_access_token is None:
 line_bot_api = LineBotApi(channel_access_token)
 handler = WebhookHandler(channel_secret)
 
-
 @app.route("/callback", methods=['POST'])
 def callback():
     # get X-Line-Signature header value
@@ -60,14 +47,40 @@ def callback():
 
     return 'OK'
 
+@app.route("/notification", methods=['GET'])
+def notification():
+    # handle webhook body
+    try:
+        # handler.handle(body, signature)
+        handler.default()
+    except InvalidSignatureError:
+        abort(400)
+
+    return 'OK'
 
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
+    # get user profile
+    profile = line_bot_api.get_profile(event.source.user_id)
+
+    # insert user profile to database
+    UserRepository().add_user(User(profile.display_name,
+                                    profile.user_id,
+                                    profile.picture_url,
+                                    profile.status_message))
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=event.message.text)
     )
 
+@handler.default()
+def default(event):
+    print('hello')
+
+# run per one hour
+def get_current_time():
+    from datetime import datetime
+    hour = datetime.now().hour
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
@@ -78,3 +91,4 @@ if __name__ == "__main__":
     options = arg_parser.parse_args()
 
     app.run(debug=options.debug, port=options.port)
+
