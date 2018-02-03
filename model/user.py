@@ -4,9 +4,9 @@ class User:
         self.user_id = user_id
         self.picture_url = picture_url
         self.status_message = status_message
+
     def get_tuple(self):
         return (self.display_name,
                 self.user_id,
                 self.picture_url,
                 self.status_message)
-

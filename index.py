@@ -47,12 +47,11 @@ def callback():
 
     return 'OK'
 
-@app.route("/notification", methods=['GET'])
+@app.route("/not", methods=['GET'])
 def notification():
     # handle webhook body
     try:
-        # handler.handle(body, signature)
-        handler.default()
+        push_message()
     except InvalidSignatureError:
         abort(400)
 
@@ -73,14 +72,12 @@ def message_text(event):
         TextSendMessage(text=event.message.text)
     )
 
-@handler.default()
-def default(event):
-    print('hello')
-
-# run per one hour
-def get_current_time():
-    from datetime import datetime
-    hour = datetime.now().hour
+# @handler.default()
+# def default(event):
+def push_message():
+    for row in UserRepository().get_users():
+        to = row[0]
+        line_bot_api.push_message(to, TextSendMessage(text='Hello World!'))
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
