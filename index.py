@@ -3,6 +3,7 @@ import sys
 from argparse import ArgumentParser
 from repository.user_repository import UserRepository
 from model.user import User
+from configure import Configure
 
 from flask import Flask, request, abort
 from linebot import (
@@ -17,18 +18,9 @@ from linebot.models import (
 
 app = Flask(__name__)
 
-# get channel_secret and channel_access_token from your environment variable
-channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
-channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
-if channel_secret is None:
-    print('Specify LINE_CHANNEL_SECRET as environment variable.')
-    sys.exit(1)
-if channel_access_token is None:
-    print('Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.')
-    sys.exit(1)
-
-line_bot_api = LineBotApi(channel_access_token)
-handler = WebhookHandler(channel_secret)
+conf = Configure()
+line_bot_api = LineBotApi(conf.channel_access_token)
+handler = WebhookHandler(conf.channel_secret)
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -72,8 +64,6 @@ def message_text(event):
         TextSendMessage(text=event.message.text)
     )
 
-# @handler.default()
-# def default(event):
 def push_message():
     for row in UserRepository().get_users():
         to = row[0]

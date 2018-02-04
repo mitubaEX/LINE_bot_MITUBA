@@ -1,6 +1,6 @@
 #!/bin/sh
-export LINE_CHANNEL_SECRET="$1"
-export LINE_CHANNEL_ACCESS_TOKEN="$2"
+. ./env_var.txt
+
 docker-compose up -d
 # sleep 20s
 until mysqladmin ping -h 0.0.0.0 --silent;
