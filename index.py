@@ -62,13 +62,34 @@ def message_text(event):
                                     profile.user_id,
                                     profile.picture_url,
                                     profile.status_message))
+    message = event.message.text
 
-    MoneyRepository().add_money(Money(event.timestamp, event.message.text))
+    # '円使った'という文字が見えたら，そこから数字を抽出してDBに保存
+    if '円使った' in message:
+        int_message = message.replace('円使った', '')
+        if int_message.isdigit():
+            moneyRepository = MoneyRepository()
 
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text)
-    )
+            # add_money
+            moneyRepository.add_money(Money(event.timestamp, int(int_message)))
+
+            # get_money
+            for row in moneyRepository.get_money():
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text='君の残高は今{0}だよ'.format(row[2]))
+                )
+        else:
+            # varidation
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text='数値入力して？')
+            )
+    else:
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=event.message.text)
+        )
 
 def push_message():
     Tweet().tweet(conf)

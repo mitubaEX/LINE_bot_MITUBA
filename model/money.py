@@ -1,8 +1,8 @@
 class Money:
     def __init__(self, timestamp, money):
         self.timestamp = timestamp
-        self.money = money
+        self.money = int(money)
 
-    def get_tuple(self):
+    def get_tuple(self, money):
         return (self.timestamp,
-                self.money)
+                money - int(self.money))

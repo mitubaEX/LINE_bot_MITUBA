@@ -9,5 +9,5 @@ CREATE TABLE users(
 CREATE TABLE money(
   id int primary key AUTO_INCREMENT,
   timestamp varchar(128) NOT NULL,
-  money varchar(128) NOT NULL
+  money int
 ) CHARACTER SET utf8mb4;
