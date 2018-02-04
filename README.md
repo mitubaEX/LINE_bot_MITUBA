@@ -1,11 +1,15 @@
 # LINE_BOT_MITUBA
 
 ## Usage
+Please write your token to ./env_var.txt.
+
+And run the following command.
+
 ```
-sh setup.sh <LINE_CHANNEL_SECRET> <LINE_CHANNEL_ACCESS_TOKEN>
+sh setup.sh
 ```
 
-Please open other window and ngrok command:
+Please open other window, and ngrok command.
 
 ```
 ngrok http 8000

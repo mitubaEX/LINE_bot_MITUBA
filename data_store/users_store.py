@@ -15,3 +15,7 @@ class UsersStore:
         # 表示
         for row in rows:
             print(row)
+
+    def get_users(self):
+        sql = "SELECT user_id FROM users"
+        return self.engine.execute(sql)

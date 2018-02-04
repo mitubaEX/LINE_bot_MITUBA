@@ -3,6 +3,8 @@ import sys
 from argparse import ArgumentParser
 from repository.user_repository import UserRepository
 from model.user import User
+from services.tweet import Tweet
+from configure import Configure
 
 from flask import Flask, request, abort
 from linebot import (
@@ -17,18 +19,9 @@ from linebot.models import (
 
 app = Flask(__name__)
 
-# get channel_secret and channel_access_token from your environment variable
-channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
-channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
-if channel_secret is None:
-    print('Specify LINE_CHANNEL_SECRET as environment variable.')
-    sys.exit(1)
-if channel_access_token is None:
-    print('Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.')
-    sys.exit(1)
-
-line_bot_api = LineBotApi(channel_access_token)
-handler = WebhookHandler(channel_secret)
+conf = Configure()
+line_bot_api = LineBotApi(conf.channel_access_token)
+handler = WebhookHandler(conf.channel_secret)
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -47,12 +40,11 @@ def callback():
 
     return 'OK'
 
-@app.route("/notification", methods=['GET'])
+@app.route("/not", methods=['GET'])
 def notification():
     # handle webhook body
     try:
-        # handler.handle(body, signature)
-        handler.default()
+        push_message()
     except InvalidSignatureError:
         abort(400)
 
@@ -73,14 +65,8 @@ def message_text(event):
         TextSendMessage(text=event.message.text)
     )
 
-@handler.default()
-def default(event):
-    print('hello')
-
-# run per one hour
-def get_current_time():
-    from datetime import datetime
-    hour = datetime.now().hour
+def push_message():
+    Tweet().tweet(conf)
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
