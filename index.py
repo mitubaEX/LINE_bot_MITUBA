@@ -3,6 +3,7 @@ import sys
 from argparse import ArgumentParser
 from repository.user_repository import UserRepository
 from model.user import User
+from services.tweet import Tweet
 from configure import Configure
 
 from flask import Flask, request, abort
@@ -65,9 +66,7 @@ def message_text(event):
     )
 
 def push_message():
-    for row in UserRepository().get_users():
-        to = row[0]
-        line_bot_api.push_message(to, TextSendMessage(text='Hello World!'))
+    Tweet().tweet(conf)
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
