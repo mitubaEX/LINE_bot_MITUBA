@@ -42,11 +42,21 @@ def callback():
 
     return 'OK'
 
-@app.route("/not", methods=['GET'])
-def notification():
+@app.route("/am", methods=['GET'])
+def am():
     # handle webhook body
     try:
-        push_message()
+        push_message('昼飯何食った？')
+    except InvalidSignatureError:
+        abort(400)
+
+    return 'OK'
+
+@app.route("/pm", methods=['GET'])
+def pm():
+    # handle webhook body
+    try:
+        push_message('晩飯何食った？')
     except InvalidSignatureError:
         abort(400)
 
@@ -77,7 +87,27 @@ def message_text(event):
             for row in moneyRepository.get_money():
                 line_bot_api.reply_message(
                     event.reply_token,
-                    TextSendMessage(text='君の残高は今{0}だよ'.format(row[2]))
+                    TextSendMessage(text='君の残高は，今{0}円だよ'.format(row[2]))
+                )
+        else:
+            # varidation
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text='数値入力して？')
+            )
+    elif '円もらった' in message:
+        int_message = message.replace('円もらった', '')
+        if int_message.isdigit():
+            moneyRepository = MoneyRepository()
+
+            # add_money
+            moneyRepository.add_money(Money(event.timestamp, -1 * int(int_message)))
+
+            # get_money
+            for row in moneyRepository.get_money():
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text='君の残高は，今{0}円だよ'.format(row[2]))
                 )
         else:
             # varidation
@@ -91,8 +121,8 @@ def message_text(event):
             TextSendMessage(text=event.message.text)
         )
 
-def push_message():
-    Tweet().tweet(conf)
+def push_message(message):
+    Tweet().tweet(conf, message)
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
