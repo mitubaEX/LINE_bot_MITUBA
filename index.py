@@ -2,7 +2,9 @@ import os
 import sys
 from argparse import ArgumentParser
 from repository.user_repository import UserRepository
+from repository.money_repository import MoneyRepository
 from model.user import User
+from model.money import Money
 from services.tweet import Tweet
 from configure import Configure
 
@@ -60,6 +62,9 @@ def message_text(event):
                                     profile.user_id,
                                     profile.picture_url,
                                     profile.status_message))
+
+    MoneyRepository().add_money(Money(event.timestamp, event.message.text))
+
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=event.message.text)
