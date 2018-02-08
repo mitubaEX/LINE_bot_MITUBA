@@ -1,11 +1,6 @@
 import os
 import sys
 from argparse import ArgumentParser
-from repository.user_repository import UserRepository
-from repository.money_repository import MoneyRepository
-from model.user import User
-from model.money import Money
-from services.tweet import Tweet
 from configure import Configure
 
 from flask import Flask, request, abort
@@ -42,87 +37,12 @@ def callback():
 
     return 'OK'
 
-@app.route("/am", methods=['GET'])
-def am():
-    # handle webhook body
-    try:
-        push_message('昼飯何食った？')
-    except InvalidSignatureError:
-        abort(400)
-
-    return 'OK'
-
-@app.route("/pm", methods=['GET'])
-def pm():
-    # handle webhook body
-    try:
-        push_message('晩飯何食った？')
-    except InvalidSignatureError:
-        abort(400)
-
-    return 'OK'
-
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    # get user profile
-    profile = line_bot_api.get_profile(event.source.user_id)
-
-    # insert user profile to database
-    UserRepository().add_user(User(profile.display_name,
-                                    profile.user_id,
-                                    profile.picture_url,
-                                    profile.status_message))
-    message = event.message.text
-
-    # '円使った'という文字が見えたら，そこから数字を抽出してDBに保存
-    if '円使った' in message:
-        int_message = message.replace('円使った', '')
-        if int_message.isdigit():
-            moneyRepository = MoneyRepository()
-
-            # add_money
-            moneyRepository.add_money(Money(event.timestamp, int(int_message)))
-
-            # get_money
-            for row in moneyRepository.get_money():
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text='君の残高は，今{0}円だよ'.format(row[2]))
-                )
-        else:
-            # varidation
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text='数値入力して？')
-            )
-    elif '円もらった' in message:
-        int_message = message.replace('円もらった', '')
-        if int_message.isdigit():
-            moneyRepository = MoneyRepository()
-
-            # add_money
-            moneyRepository.add_money(Money(event.timestamp, -1 * int(int_message)))
-
-            # get_money
-            for row in moneyRepository.get_money():
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text='君の残高は，今{0}円だよ'.format(row[2]))
-                )
-        else:
-            # varidation
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text='数値入力して？')
-            )
-    else:
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=event.message.text)
-        )
-
-def push_message(message):
-    Tweet().tweet(conf, message)
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=event.message.text)
+    )
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
