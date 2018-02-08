@@ -1,12 +1,10 @@
 import os
 import sys
 from argparse import ArgumentParser
-from repository.user_repository import UserRepository
-from repository.money_repository import MoneyRepository
-from model.user import User
-from model.money import Money
-from services.tweet import Tweet
 from configure import Configure
+
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 
 from flask import Flask, request, abort
 from linebot import (
@@ -16,7 +14,7 @@ from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
+    MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, MessageTemplateAction, URITemplateAction, CarouselTemplate, CarouselColumn
 )
 
 app = Flask(__name__)
@@ -24,6 +22,11 @@ app = Flask(__name__)
 conf = Configure()
 line_bot_api = LineBotApi(conf.channel_access_token)
 handler = WebhookHandler(conf.channel_secret)
+
+client_id = conf.spotify_client_id
+client_secret = conf.spotify_client_secret
+client_credentials_manager = spotipy.oauth2.SpotifyClientCredentials(client_id, client_secret)
+spotify = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -42,87 +45,40 @@ def callback():
 
     return 'OK'
 
-@app.route("/am", methods=['GET'])
-def am():
-    # handle webhook body
-    try:
-        push_message('昼飯何食った？')
-    except InvalidSignatureError:
-        abort(400)
-
-    return 'OK'
-
-@app.route("/pm", methods=['GET'])
-def pm():
-    # handle webhook body
-    try:
-        push_message('晩飯何食った？')
-    except InvalidSignatureError:
-        abort(400)
-
-    return 'OK'
-
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    # get user profile
-    profile = line_bot_api.get_profile(event.source.user_id)
-
-    # insert user profile to database
-    UserRepository().add_user(User(profile.display_name,
-                                    profile.user_id,
-                                    profile.picture_url,
-                                    profile.status_message))
-    message = event.message.text
-
-    # '円使った'という文字が見えたら，そこから数字を抽出してDBに保存
-    if '円使った' in message:
-        int_message = message.replace('円使った', '')
-        if int_message.isdigit():
-            moneyRepository = MoneyRepository()
-
-            # add_money
-            moneyRepository.add_money(Money(event.timestamp, int(int_message)))
-
-            # get_money
-            for row in moneyRepository.get_money():
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text='君の残高は，今{0}円だよ'.format(row[2]))
-                )
-        else:
-            # varidation
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text='数値入力して？')
+    if 'プレイリスト' in event.message.text:
+        playlists = get_playlists()
+        colums_list = [ CarouselColumn(
+            thumbnail_image_url=i['images'][0]['url'],
+            title=i['name'],
+            text='playlist',
+            actions=[
+                URITemplateAction(
+                    label='Go',
+                    uri=i['external_urls']['spotify']
+                    )
+                ]
+            ) for i in playlists ]
+        carousel_template_message = TemplateSendMessage(
+            alt_text='Carousel template',
+            template=CarouselTemplate(
+                columns=colums_list
             )
-    elif '円もらった' in message:
-        int_message = message.replace('円もらった', '')
-        if int_message.isdigit():
-            moneyRepository = MoneyRepository()
-
-            # add_money
-            moneyRepository.add_money(Money(event.timestamp, -1 * int(int_message)))
-
-            # get_money
-            for row in moneyRepository.get_money():
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text='君の残高は，今{0}円だよ'.format(row[2]))
-                )
-        else:
-            # varidation
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text='数値入力して？')
-            )
+        )
+        line_bot_api.reply_message(
+            event.reply_token,
+            carousel_template_message
+        )
     else:
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=event.message.text)
         )
 
-def push_message(message):
-    Tweet().tweet(conf, message)
+def get_playlists():
+    result = spotify.featured_playlists(limit=5)
+    return result['playlists']['items']
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
