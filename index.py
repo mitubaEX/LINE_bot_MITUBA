@@ -47,31 +47,34 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    playlists = get_playlists()
-    colums_list = [ CarouselColumn(
-        thumbnail_image_url=i['images'][0]['url'],
-        title=i['name'],
-        text='playlist',
-        actions=[
-            URITemplateAction(
-                label='Go',
-                uri=i['external_urls']['spotify']
-                )
-            ]
-        ) for i in playlists ]
-    print(colums_list)
-
-
-    carousel_template_message = TemplateSendMessage(
-	alt_text='Carousel template',
-	template=CarouselTemplate(
-	    columns=colums_list
-	)
-    )
-    line_bot_api.reply_message(
-        event.reply_token,
-	carousel_template_message
-    )
+    if 'プレイリスト' in event.message.text:
+        playlists = get_playlists()
+        colums_list = [ CarouselColumn(
+            thumbnail_image_url=i['images'][0]['url'],
+            title=i['name'],
+            text='playlist',
+            actions=[
+                URITemplateAction(
+                    label='Go',
+                    uri=i['external_urls']['spotify']
+                    )
+                ]
+            ) for i in playlists ]
+        carousel_template_message = TemplateSendMessage(
+            alt_text='Carousel template',
+            template=CarouselTemplate(
+                columns=colums_list
+            )
+        )
+        line_bot_api.reply_message(
+            event.reply_token,
+            carousel_template_message
+        )
+    else:
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=event.message.text)
+        )
 
 def get_playlists():
     result = spotify.featured_playlists(limit=5)
