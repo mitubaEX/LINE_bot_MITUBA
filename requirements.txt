@@ -6,3 +6,4 @@ requests
 requests-oauthlib
 spotipy
 gunicorn
+firebase-admin

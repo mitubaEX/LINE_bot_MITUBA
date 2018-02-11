@@ -2,9 +2,7 @@ import os
 import sys
 from argparse import ArgumentParser
 from configure import Configure
-
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
+from repository.spotify_repository import SpotifyRepository
 
 from flask import Flask, request, abort
 from linebot import (
@@ -23,10 +21,10 @@ conf = Configure()
 line_bot_api = LineBotApi(conf.channel_access_token)
 handler = WebhookHandler(conf.channel_secret)
 
-client_id = conf.spotify_client_id
-client_secret = conf.spotify_client_secret
-client_credentials_manager = spotipy.oauth2.SpotifyClientCredentials(client_id, client_secret)
-spotify = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+# client_id = conf.spotify_client_id
+# client_secret = conf.spotify_client_secret
+# client_credentials_manager = spotipy.oauth2.SpotifyClientCredentials(client_id, client_secret)
+# spotify = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -48,7 +46,7 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
     if 'プレイリスト' in event.message.text:
-        playlists = get_playlists()
+        playlists = SpotifyRepository().get_playlists(conf)
         colums_list = [ CarouselColumn(
             thumbnail_image_url=i['images'][0]['url'],
             title=i['name'],
@@ -76,9 +74,9 @@ def message_text(event):
             TextSendMessage(text=event.message.text)
         )
 
-def get_playlists():
-    result = spotify.featured_playlists(limit=5)
-    return result['playlists']['items']
+# def get_playlists():
+#     result = spotify.featured_playlists(limit=5)
+#     return result['playlists']['items']
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
