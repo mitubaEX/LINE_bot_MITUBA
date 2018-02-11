@@ -24,6 +24,8 @@ app = Flask(__name__)
 conf = Configure()
 line_bot_api = LineBotApi(conf.channel_access_token)
 handler = WebhookHandler(conf.channel_secret)
+spotifyRepository = SpotifyRepository()
+moneyRepository = MoneyRepository()
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -45,8 +47,9 @@ def callback():
 # my function
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    if 'プレイリスト' in event.message.text:
-        colums_list = create_colums_list(SpotifyRepository().get_playlists(conf))
+    message = event.message.text
+    if 'プレイリスト' in message:
+        colums_list = create_colums_list(spotifyRepository.get_playlists(conf))
         carousel_template_message = TemplateSendMessage(
             alt_text='Carousel template',
             template=CarouselTemplate(
@@ -57,6 +60,21 @@ def message_text(event):
             event.reply_token,
             carousel_template_message
         )
+    elif '円' in message:
+        # 文字削除
+        int_message = message.replace('円使った', '').replace('円もらった', '').replace(',', '')
+        if int_message.isdigit():
+            val = get_result_money(message, event.timestamp, int(int_message))
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text='君の残高は，今{0}円だよ'.format(val))
+            )
+        else:
+            # varidation
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text='数値入力して？')
+            )
     else:
         line_bot_api.reply_message(
             event.reply_token,
@@ -75,6 +93,14 @@ def create_colums_list(playlists):
                 )
             ]
         ) for i in playlists ]
+
+def get_result_money(message, timestamp, int_message):
+    if '円使った' in message:
+        return moneyRepository.decrease_money(Money(timestamp, int_message))
+    elif '円もらった' in message:
+        return moneyRepository.increase_money(Money(timestamp, int_message))
+    return 0
+
 
 
 if __name__ == "__main__":
