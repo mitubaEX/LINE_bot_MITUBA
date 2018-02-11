@@ -1,6 +1,8 @@
-import sys,os
+import sys
+import os
 sys.path.append(os.pardir)
 from data_store.spotify_store import SpotifyStore
+
 
 class SpotifyRepository:
     def get_playlists(self, conf):

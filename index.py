@@ -16,8 +16,16 @@ from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, MessageTemplateAction, URITemplateAction, CarouselTemplate, CarouselColumn
-)
+    MessageEvent,
+    TextMessage,
+    TextSendMessage,
+    TemplateSendMessage,
+    ButtonsTemplate,
+    PostbackTemplateAction,
+    MessageTemplateAction,
+    URITemplateAction,
+    CarouselTemplate,
+    CarouselColumn)
 
 app = Flask(__name__)
 
@@ -26,6 +34,7 @@ line_bot_api = LineBotApi(conf.channel_access_token)
 handler = WebhookHandler(conf.channel_secret)
 spotifyRepository = SpotifyRepository()
 moneyRepository = MoneyRepository()
+
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -45,6 +54,8 @@ def callback():
     return 'OK'
 
 # my function
+
+
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
     message = event.message.text
@@ -62,7 +73,13 @@ def message_text(event):
         )
     elif '円' in message:
         # 文字削除
-        int_message = message.replace('円使った', '').replace('円もらった', '').replace(',', '')
+        int_message = message.replace(
+            '円使った',
+            '').replace(
+            '円もらった',
+            '').replace(
+            ',',
+            '')
         if int_message.isdigit():
             val = get_result_money(message, event.timestamp, int(int_message))
             line_bot_api.reply_message(
@@ -81,8 +98,9 @@ def message_text(event):
             TextSendMessage(text=event.message.text)
         )
 
+
 def create_colums_list(playlists):
-    return [ CarouselColumn(
+    return [CarouselColumn(
         thumbnail_image_url=i['images'][0]['url'],
         title=i['name'],
         text='playlist',
@@ -90,9 +108,10 @@ def create_colums_list(playlists):
             URITemplateAction(
                 label='Go',
                 uri=i['external_urls']['spotify']
-                )
-            ]
-        ) for i in playlists ]
+            )
+        ]
+    ) for i in playlists]
+
 
 def get_result_money(message, timestamp, int_message):
     if '円使った' in message:
@@ -100,7 +119,6 @@ def get_result_money(message, timestamp, int_message):
     elif '円もらった' in message:
         return moneyRepository.increase_money(Money(timestamp, int_message))
     return 0
-
 
 
 if __name__ == "__main__":
@@ -112,4 +130,3 @@ if __name__ == "__main__":
     options = arg_parser.parse_args()
 
     app.run(debug=options.debug, port=options.port)
-

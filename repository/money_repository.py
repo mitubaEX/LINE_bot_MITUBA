@@ -1,6 +1,8 @@
-import sys,os
+import sys
+import os
 sys.path.append(os.pardir)
 from data_store.money_store import MoneyStore
+
 
 class MoneyRepository:
     def __init__(self):

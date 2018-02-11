@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 
+
 class UsersStore:
     def __init__(self):
         self.url = 'mysql+mysqldb://root:PASSWORD@0.0.0.0:3306/line_bot?charset=utf8'
