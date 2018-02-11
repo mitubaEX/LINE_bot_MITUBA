@@ -4,6 +4,10 @@ from argparse import ArgumentParser
 from configure import Configure
 from repository.spotify_repository import SpotifyRepository
 
+# money
+from repository.money_repository import MoneyRepository
+from model.money import Money
+
 from flask import Flask, request, abort
 from linebot import (
     LineBotApi, WebhookHandler
@@ -20,11 +24,6 @@ app = Flask(__name__)
 conf = Configure()
 line_bot_api = LineBotApi(conf.channel_access_token)
 handler = WebhookHandler(conf.channel_secret)
-
-# client_id = conf.spotify_client_id
-# client_secret = conf.spotify_client_secret
-# client_credentials_manager = spotipy.oauth2.SpotifyClientCredentials(client_id, client_secret)
-# spotify = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -43,21 +42,11 @@ def callback():
 
     return 'OK'
 
+# my function
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
     if 'プレイリスト' in event.message.text:
-        playlists = SpotifyRepository().get_playlists(conf)
-        colums_list = [ CarouselColumn(
-            thumbnail_image_url=i['images'][0]['url'],
-            title=i['name'],
-            text='playlist',
-            actions=[
-                URITemplateAction(
-                    label='Go',
-                    uri=i['external_urls']['spotify']
-                    )
-                ]
-            ) for i in playlists ]
+        colums_list = create_colums_list(SpotifyRepository().get_playlists(conf))
         carousel_template_message = TemplateSendMessage(
             alt_text='Carousel template',
             template=CarouselTemplate(
@@ -74,9 +63,19 @@ def message_text(event):
             TextSendMessage(text=event.message.text)
         )
 
-# def get_playlists():
-#     result = spotify.featured_playlists(limit=5)
-#     return result['playlists']['items']
+def create_colums_list(playlists):
+    return [ CarouselColumn(
+        thumbnail_image_url=i['images'][0]['url'],
+        title=i['name'],
+        text='playlist',
+        actions=[
+            URITemplateAction(
+                label='Go',
+                uri=i['external_urls']['spotify']
+                )
+            ]
+        ) for i in playlists ]
+
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
